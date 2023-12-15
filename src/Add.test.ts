@@ -1,5 +1,5 @@
-import { Add } from './Add';
-import { Field, Mina, PrivateKey, PublicKey, AccountUpdate } from 'o1js';
+import { SimpleProgram } from './SimpleProgram';
+import { Field, Mina, PrivateKey, PublicKey, AccountUpdate, VerificationKey, Proof } from 'o1js';
 
 /*
  * This file specifies how to test the `Add` example smart contract. It is safe to delete this file and replace
@@ -8,60 +8,25 @@ import { Field, Mina, PrivateKey, PublicKey, AccountUpdate } from 'o1js';
  * See https://docs.minaprotocol.com/zkapps for more info.
  */
 
-let proofsEnabled = false;
+describe('SimpleProgram', () => {
 
-describe('Add', () => {
-  let deployerAccount: PublicKey,
-    deployerKey: PrivateKey,
-    senderAccount: PublicKey,
-    senderKey: PrivateKey,
-    zkAppAddress: PublicKey,
-    zkAppPrivateKey: PrivateKey,
-    zkApp: Add;
+  let proof0: Proof<Field, void>;
+  let proof1: Proof<Field, void>;
+  let proof2: Proof<Field, void>;
 
-  beforeAll(async () => {
-    if (proofsEnabled) await Add.compile();
+  it('compile zkProgram and generate proof 0', async () => {
+    let { verificationKey } = await SimpleProgram.compile();
   });
 
-  beforeEach(() => {
-    const Local = Mina.LocalBlockchain({ proofsEnabled });
-    Mina.setActiveInstance(Local);
-    ({ privateKey: deployerKey, publicKey: deployerAccount } =
-      Local.testAccounts[0]);
-    ({ privateKey: senderKey, publicKey: senderAccount } =
-      Local.testAccounts[1]);
-    zkAppPrivateKey = PrivateKey.random();
-    zkAppAddress = zkAppPrivateKey.toPublicKey();
-    zkApp = new Add(zkAppAddress);
+  it('generate proof 0', async () => {
+    proof0 = await SimpleProgram.baseCase(Field(0));
   });
 
-  async function localDeploy() {
-    const txn = await Mina.transaction(deployerAccount, () => {
-      AccountUpdate.fundNewAccount(deployerAccount);
-      zkApp.deploy();
-    });
-    await txn.prove();
-    // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
-    await txn.sign([deployerKey, zkAppPrivateKey]).send();
-  }
-
-  it('generates and deploys the `Add` smart contract', async () => {
-    await localDeploy();
-    const num = zkApp.num.get();
-    expect(num).toEqual(Field(1));
+  it('generate recursive proof 1', async () => {
+    proof1 = await SimpleProgram.step(Field(1), proof0);
   });
 
-  it('correctly updates the num state on the `Add` smart contract', async () => {
-    await localDeploy();
-
-    // update transaction
-    const txn = await Mina.transaction(senderAccount, () => {
-      zkApp.update();
-    });
-    await txn.prove();
-    await txn.sign([senderKey]).send();
-
-    const updatedNum = zkApp.num.get();
-    expect(updatedNum).toEqual(Field(3));
+  it('generate recursive proof 2', async () => {
+    proof2 = await SimpleProgram.step(Field(2), proof1);
   });
 });
