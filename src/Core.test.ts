@@ -34,4 +34,33 @@ describe('SimpleProgram', () => {
     proof1 = await Core.commitSolution_Hf(tokenDeposit, codeSolutionHash, proof0);
   });
 
+  it('lock solution commits before releasing raw unit test', async () => {
+    let tokenBounty = Field(tokenBountyValue);
+    let tokenDeposit = Field(tokenDepositValue);
+    let newHash = Poseidon.hash([tokenBounty, tokenDeposit])
+    proof2 = await Core.lockCommit_Nf(newHash, proof0, proof1);
+  });
+
+  it('swap proofs', async () => {
+    let tokenBounty = Field(tokenBountyValue);
+    let tokenDeposit = Field(tokenDepositValue);
+    let newHash = Poseidon.hash([tokenBounty, tokenDeposit])
+    proof2 = await Core.lockCommit_Nf(newHash, proof1, proof0);
+  });
+
+  it('swap poseidon hash fields', async () => {
+    let tokenBounty = Field(tokenBountyValue);
+    let tokenDeposit = Field(tokenDepositValue);
+    let newHash = Poseidon.hash([tokenDeposit, tokenBounty])
+    proof2 = await Core.lockCommit_Nf(newHash, proof0, proof1);
+  });
+
+  it('swap both (should be flipped and work)', async () => {
+    let tokenBounty = Field(tokenBountyValue);
+    let tokenDeposit = Field(tokenDepositValue);
+    let newHash = Poseidon.hash([tokenDeposit, tokenBounty])
+    proof2 = await Core.lockCommit_Nf(newHash, proof1, proof0);
+  });
+
+
 });
